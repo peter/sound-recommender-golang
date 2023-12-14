@@ -1,10 +1,12 @@
-package initializers
+package database
 
 import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+var Db *gorm.DB
 
 func ConnectDB() *gorm.DB {
 	dsn := "host=localhost user=postgres dbname=sound-recommender port=5432 sslmode=disable"

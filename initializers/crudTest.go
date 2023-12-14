@@ -2,7 +2,9 @@ package initializers
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/peter/sound-recommender-golang/models"
 	"github.com/peter/sound-recommender-golang/util"
 	"gorm.io/datatypes"
@@ -10,6 +12,8 @@ import (
 )
 
 func DatabaseCrudTest(db *gorm.DB) {
+	startTime := time.Now()
+	log.Info("DatabaseCrudTest starting")
 	// CREATE
 	sound := models.Sound{
 		Title:  "Foobar",
@@ -46,4 +50,7 @@ func DatabaseCrudTest(db *gorm.DB) {
 
 	// DELETE
 	db.Delete(&sound)
+
+	elapsed := time.Since(startTime)
+	log.Infof("DatabaseCrudTest done elapsed=%s", elapsed)
 }
