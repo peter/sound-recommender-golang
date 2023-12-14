@@ -9,11 +9,11 @@ import (
 
 type Sound struct {
 	ID    int    `json:"id"`
-	Title string `json:"title" validate:"required"`
+	Title string `json:"title" validate:"required,min=1"`
 	// TODO: need to handle text array with pq.StringArray or use JSONB
 	// https://stackoverflow.com/questions/63256680/adding-an-array-of-integers-as-a-data-type-in-a-gorm-model
 	// https://stackoverflow.com/questions/65825144/migrating-problem-using-psql-array-for-pq-to-pgx
-	Genres            pq.StringArray `gorm:"type:text[]" json:"genres"`
+	Genres            pq.StringArray `json:"genres" gorm:"type:text[]"`
 	BPM               int            `json:"bpm"`
 	DurationInSeconds int            `json:"duration_in_seconds"`
 	// JSONB data

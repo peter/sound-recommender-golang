@@ -9,18 +9,32 @@ import (
 	"github.com/peter/sound-recommender-golang/models"
 )
 
+func findSound(c *fiber.Ctx, id int, sound *models.Sound) bool {
+	database.Db.Find(&sound, "id = ?", id)
+	log.Info("pm debug findSound ", sound.ID, sound.ID == 0)
+	if sound.ID == 0 {
+		errorMessage := "Could not find sound"
+		c.Status(fiber.StatusNotFound).JSON(helpers.ErrorResponseBody(errorMessage))
+		return false
+	}
+	return true
+}
+
 func CreateSound(c *fiber.Ctx) error {
 	var sound models.Sound
 
-	if validationError := helpers.InputValidator.ValidateInput(c, &sound); len(validationError) > 0 {
-		return validationError[0]
+	if result := helpers.InputValidator.ValidateInput(c, &sound); result.Error != nil {
+		return result.Error
 	}
 
-	// Gorm error handling: https://gorm.io/docs/error_handling.html
 	if result := database.Db.Create(&sound); result.Error != nil {
-		// TODO: should this error be handled and if so how?
-		log.Error("CreateSound error", result.Error)
-		return c.Status(500).JSON(map[string]interface{}{"error": "CreateSound error"})
+		// Gorm error handling: https://gorm.io/docs/error_handling.html
+		// TODO: should this error be handled here or in the error handler?
+		// Can Gorm be configured to raise those errors (panic) automatically?
+		// errorMessage := fmt.Sprintf("CreateSound database error: %s", result.Error)
+		// log.Error(errorMessage)
+		// return c.Status(500).JSON(helpers.ErrorResponseBody(errorMessage))
+		panic(result.Error)
 	}
 
 	return c.Status(200).JSON(sound)
@@ -28,91 +42,29 @@ func CreateSound(c *fiber.Ctx) error {
 
 func UpdateSound(c *fiber.Ctx) error {
 	return c.SendString("TODO: UpdateSound")
-	// id, err := c.ParamsInt("id")
-
-	// var product models.Product
-
-	// if err != nil {
-	// 	return c.Status(400).JSON("Please ensure that :id is an integer")
-	// }
-
-	// err = findProduct(id, &product)
-
-	// if err != nil {
-	// 	return c.Status(400).JSON(err.Error())
-	// }
-
-	// type UpdateProduct struct {
-	// 	Name         string `json:"name"`
-	// 	SerialNumber string `json:"serial_number"`
-	// }
-
-	// var updateData UpdateProduct
-
-	// if err := c.BodyParser(&updateData); err != nil {
-	// 	return c.Status(500).JSON(err.Error())
-	// }
-
-	// product.Name = updateData.Name
-	// product.SerialNumber = updateData.SerialNumber
-
-	// database.Database.Db.Save(&product)
-
-	// responseProduct := CreateResponseProduct(product)
-
-	// return c.Status(200).JSON(responseProduct)
 }
 
 func DeleteSound(c *fiber.Ctx) error {
 	return c.SendString("TODO: DeleteSound")
-	// id, err := c.ParamsInt("id")
-
-	// var user models.User
-
-	// if err != nil {
-	// 	return c.Status(400).JSON("Please ensure that :id is an integer")
-	// }
-
-	// err = findUser(id, &user)
-
-	// if err != nil {
-	// 	return c.Status(400).JSON(err.Error())
-	// }
-
-	// if err = database.Database.Db.Delete(&user).Error; err != nil {
-	// 	return c.Status(404).JSON(err.Error())
-	// }
-	// return c.Status(200).JSON("Successfully deleted User")
 }
 
 func GetSound(c *fiber.Ctx) error {
-	return c.SendString("TODO: GetSound")
-	// id, err := c.ParamsInt("id")
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(helpers.ErrorResponseBody("Please ensure that :id is an integer"))
+	}
 
-	// var product models.Product
+	var sound models.Sound
 
-	// if err != nil {
-	// 	return c.Status(400).JSON("Please ensure that :id is an integer")
-	// }
+	if findResult := findSound(c, id, &sound); !findResult {
+		return nil
+	}
 
-	// if err := findProduct(id, &product); err != nil {
-	// 	return c.Status(400).JSON(err.Error())
-	// }
-
-	// responseProduct := CreateResponseProduct(product)
-
-	// return c.Status(200).JSON(responseProduct)
+	return c.Status(200).JSON(sound)
 }
 
 func ListSounds(c *fiber.Ctx) error {
-	return c.SendString("TODO: ListSounds")
-	// products := []models.Product{}
-	// database.Database.Db.Find(&products)
-	// responseProducts := []Product{}
-	// for _, product := range products {
-	// 	responseProduct := CreateResponseProduct(product)
-	// 	responseProducts = append(responseProducts, responseProduct)
-	// }
-
-	// return c.Status(200).JSON(responseProducts)
+	sounds := []models.Sound{}
+	database.Db.Find(&sounds)
+	return c.Status(200).JSON(map[string]interface{}{"data": sounds})
 }

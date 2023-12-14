@@ -10,6 +10,7 @@ import (
 
 	"github.com/peter/sound-recommender-golang/database"
 	"github.com/peter/sound-recommender-golang/handlers"
+	"github.com/peter/sound-recommender-golang/helpers"
 	"github.com/peter/sound-recommender-golang/initializers"
 )
 
@@ -22,6 +23,8 @@ func runInitializers() {
 	initializers.MigrateModels(database.Db)
 
 	initializers.DatabaseCrudTest(database.Db)
+
+	helpers.InitializeValidator()
 
 	elapsed := time.Since(startTime)
 	log.Infof("initialize done - elapsed=%d", elapsed.Milliseconds())

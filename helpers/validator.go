@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/go-playground/validator/v10/non-standard/validators"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -26,11 +27,27 @@ type (
 		Success bool   `json:"success"`
 		Message string `json:"message"`
 	}
+
+	ValidationResult struct {
+		Error error
+	}
 )
 
 // This is the validator instance
 // for more information see: https://github.com/go-playground/validator
 var validate = validator.New()
+
+func InitializeValidator() {
+	validate.RegisterValidation("notBlank", validators.NotBlank)
+}
+
+func ErrorsResponseBody(errors []string) map[string]interface{} {
+	return map[string]interface{}{"errors": errors}
+}
+
+func ErrorResponseBody(error string) map[string]interface{} {
+	return ErrorsResponseBody([]string{error})
+}
 
 func (v XValidator) Validate(data interface{}) []ErrorResponse {
 	validationErrors := []ErrorResponse{}
@@ -53,11 +70,12 @@ func (v XValidator) Validate(data interface{}) []ErrorResponse {
 	return validationErrors
 }
 
-func (v XValidator) ValidateInput(c *fiber.Ctx, data interface{}) []error {
+func (v XValidator) ValidateInput(c *fiber.Ctx, data interface{}) ValidationResult {
+	var validationResult = ValidationResult{}
 	if err := c.BodyParser(&data); err != nil {
 		errorMessage := fmt.Sprintf("Could not parse JSON body: %s", err.Error())
 		log.Error(errorMessage)
-		return []error{c.Status(fiber.ErrBadRequest.Code).JSON(map[string]interface{}{"errors": []string{errorMessage}})}
+		validationResult.Error = c.Status(fiber.ErrBadRequest.Code).JSON(ErrorResponseBody(errorMessage))
 	}
 	if errs := v.Validate(data); len(errs) > 0 && errs[0].Error {
 		errors := make([]string, 0)
@@ -69,9 +87,9 @@ func (v XValidator) ValidateInput(c *fiber.Ctx, data interface{}) []error {
 				err.Tag,
 			))
 		}
-		return []error{c.Status(fiber.ErrUnprocessableEntity.Code).JSON(map[string]interface{}{"errors": errors})}
+		validationResult.Error = c.Status(fiber.ErrUnprocessableEntity.Code).JSON(ErrorsResponseBody(errors))
 	}
-	return []error{}
+	return validationResult
 }
 
 var InputValidator = &XValidator{
