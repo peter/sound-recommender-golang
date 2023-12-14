@@ -3,7 +3,11 @@ package helpers
 // Validation code from: https://docs.gofiber.io/guide/validation
 
 import (
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 type (
@@ -47,6 +51,27 @@ func (v XValidator) Validate(data interface{}) []ErrorResponse {
 	}
 
 	return validationErrors
+}
+
+func (v XValidator) ValidateInput(c *fiber.Ctx, data interface{}) []error {
+	if err := c.BodyParser(&data); err != nil {
+		errorMessage := fmt.Sprintf("Could not parse JSON body: %s", err.Error())
+		log.Error(errorMessage)
+		return []error{c.Status(fiber.ErrBadRequest.Code).JSON(map[string]interface{}{"errors": []string{errorMessage}})}
+	}
+	if errs := v.Validate(data); len(errs) > 0 && errs[0].Error {
+		errors := make([]string, 0)
+		for _, err := range errs {
+			errors = append(errors, fmt.Sprintf(
+				"[%s]: '%v' | Failed validation '%s'",
+				err.FailedField,
+				err.Value,
+				err.Tag,
+			))
+		}
+		return []error{c.Status(fiber.ErrUnprocessableEntity.Code).JSON(map[string]interface{}{"errors": errors})}
+	}
+	return []error{}
 }
 
 var InputValidator = &XValidator{

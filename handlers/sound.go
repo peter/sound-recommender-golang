@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 
@@ -14,20 +12,8 @@ import (
 func CreateSound(c *fiber.Ctx) error {
 	var sound models.Sound
 
-	if err := c.BodyParser(&sound); err != nil {
-		return c.Status(fiber.ErrBadRequest.Code).JSON(err.Error())
-	}
-	if errs := helpers.InputValidator.Validate(sound); len(errs) > 0 && errs[0].Error {
-		errors := make([]string, 0)
-		for _, err := range errs {
-			errors = append(errors, fmt.Sprintf(
-				"[%s]: '%v' | Needs to implement '%s'",
-				err.FailedField,
-				err.Value,
-				err.Tag,
-			))
-		}
-		return c.Status(fiber.ErrUnprocessableEntity.Code).JSON(map[string]interface{}{"errors": errors})
+	if validationError := helpers.InputValidator.ValidateInput(c, &sound); len(validationError) > 0 {
+		return validationError[0]
 	}
 
 	// Gorm error handling: https://gorm.io/docs/error_handling.html
